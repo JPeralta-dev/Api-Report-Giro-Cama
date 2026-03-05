@@ -1,43 +1,29 @@
-## Director medico diego salazar necesita tablero de facturacion de ciruguias.
-
-# tablero de cirugia facturacion Ordenes de servicio
-from sqlalchemy import Engine, create_engine,text
+from sqlalchemy import Engine, create_engine, text
 from typing import Optional
 from src.config.env.env import settings
 import logging
 
-class DataBase():
-    _instance = None
+class DataBase:
     _engine: Optional[Engine] = None
-    _sessionLocal = None
-    
-    def get_connection_string(self) -> str:
-        connection_string = (
-        f"mssql+pyodbc://{settings.DB_USER}:{settings.DB_PASSWORD}"
-        f"@{settings.DB_SERVER}/{settings.DB_NAME}"
-        ##f"?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
-    )
-        return connection_string
+
     @classmethod
-    def get_instance(cls,self) -> Engine :
+    def get_engine(cls) -> Engine:
         if cls._engine is None:
-            cls._engine = create_engine(self.get_connection_string())
-        cls._instance = cls()
+            connection_string = (
+                f"mssql+pyodbc://{settings.DB_USER}:{settings.DB_PASSWORD}"
+                f"@{settings.DB_SERVER}/{settings.DB_NAME}"
+                f"?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
+            )
+            cls._engine = create_engine(connection_string, pool_size=10, max_overflow=20)
         return cls._engine
-    
+
     @classmethod
-    def check_connection(cls,self):
+    def check_connection(cls) -> bool:
         try:
-            engine = cls.get_instance(self)
-            with engine.connect() as conn:
+            with cls.get_engine().connect() as conn:
                 conn.execute(text("SELECT 1"))
-                print('✅ Conexión a la base de datos exitosa.') 
+                print("✅ Conexión exitosa")
                 return True
         except Exception as error:
-            logging.error(f"❌ Error de conexión a la base de datos: {error}")
+            logging.error(f"❌ Error de conexión: {error}")
             return False
-        
-    
-    
-    
-    

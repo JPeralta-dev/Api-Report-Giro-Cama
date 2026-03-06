@@ -1,5 +1,13 @@
 import pandas as pd
 
+## Variable que indentifica el umbrar de minutos que no pudo haberse cambiado de servicio
+##*
+# Razon: Se realiza un estudio y muchos medicos por las largas hora de laburo tiende a equivocarse
+# de servicio y rapidamente cambian para corregir su error pero esto genera registros incoherente
+# lo que se hace es evauluar si es servicio duro menos de 2 minutos entonces es un error#
+UMBRAL_MINUTOS = 2
+
+
 
 def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     
@@ -10,6 +18,29 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     
     # 2. Ordeno los registros por pacientes, ingreso y fecha de inicio
     df = df.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
+    
+    # # ── 1. Eliminar registros efímeros ────────────────────────────────────────
+    # df["DURACION_MIN"] = (df["FIN"] - df["INICIO"]).dt.total_seconds() / 60
+    # efimeros = df[df["DURACION_MIN"] < UMBRAL_MINUTOS].copy()
+    # df = df[df["DURACION_MIN"] >= UMBRAL_MINUTOS].reset_index(drop=True)
+
+    # total_eliminados = len(efimeros)
+    # print(total_eliminados)
+    # if total_eliminados > 0:
+    #     print(f"\n🗑️  Registros efímeros eliminados (< {UMBRAL_MINUTOS} min): {total_eliminados}")
+    #     for _, row in efimeros.iterrows():
+    #         duracion_seg = (row["FIN"] - row["INICIO"]).total_seconds()
+    #         print(
+    #             f"   ❌ [{row['IDENTIFICACION']}] {row['PACIENTE']} | "
+    #             f"INGRESO {row['INGRESO']} | "
+    #             f"SERVICIO: {row['SERVICIO']} | "
+    #             f"CAMA: {row['CAMA']} | "
+    #             f"DURACIÓN: {duracion_seg:.0f} seg | "
+    #             f"{row['INICIO']} → {row['FIN']}"
+    #         )
+    # else:
+    #     print(f"\n✅ No se encontraron registros efímeros")
+    
     
     resultado = []
     

@@ -10,8 +10,7 @@ def RouterReports () -> APIRouter:
     @router.get("/")
     def get_report_giro_cama():
         engine = DataBase.get_engine()
-        proccesing_query_giro_cama(get_giro_camas(engine,query))
-        return {}
+        return proccesing_query_giro_cama(get_giro_camas(engine,query))
     return router
 
 

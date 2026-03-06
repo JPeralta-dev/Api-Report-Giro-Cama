@@ -7,7 +7,16 @@ import pandas as pd
 # lo que se hace es evauluar si es servicio duro menos de 2 minutos entonces es un error#
 UMBRAL_MINUTOS = 2
 
-
+SERVICIO_OMITIDOS = ["1ER PISO DE REANIMACION. LADO B",
+                     "1ER PISO OBSERVACION DE URGENCIAS ADULTOS",
+                     "1ER PISO OBSERVACION DE URGENCIAS TRAUMA",
+                     "1ER PISO SALA DE PREPARACION QUIRURGICA",
+                     "1ER PISO SALA DE RECUPERACION",
+                     "1ER PISO TEMPORAL REMITIDOS",
+                     "1ER PISO URG.  LADO B EXT",
+                     "1ER PISO URG. LADO A EXT",
+                     "HOSPITALIZACION EN CASA"
+                     ]
 
 def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     

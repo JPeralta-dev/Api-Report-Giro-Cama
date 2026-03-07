@@ -46,6 +46,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     RENOMBRAR_SERVICIOS = {
         "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
     }
+    
     df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
     # ── 5. Omitir servicios excluidos ─────────────────────────────────────────
@@ -61,11 +62,11 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
         grupo  = grupo.reset_index(drop=True)
         bloque = grupo.iloc[0].to_dict()
-
+        
         for i in range(1, len(grupo)):
             fila_actual       = grupo.iloc[i]
             es_mismo_servicio = fila_actual["SERVICIO"] == bloque["SERVICIO"]
-            es_continuo       = fila_actual["INICIO"]   == bloque["FIN"]
+            es_continuo       = abs((fila_actual["INICIO"] - bloque["FIN"]).total_seconds()) <= 60
 
             if es_mismo_servicio and es_continuo:
                 bloque["FIN"] = fila_actual["FIN"]

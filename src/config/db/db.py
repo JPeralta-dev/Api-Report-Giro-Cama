@@ -16,6 +16,7 @@ class DataBase:
             )
             cls._engine = create_engine(connection_string, pool_size=10, max_overflow=20)
         return cls._engine
+    
 
     @classmethod
     def check_connection(cls) -> bool:

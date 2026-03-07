@@ -1,25 +1,10 @@
 import pandas as pd
-
 ## Variable que indentifica el umbrar de minutos que no pudo haberse cambiado de servicio
 ##*
 # Razon: Se realiza un estudio y muchos medicos por las largas hora de laburo tiende a equivocarse
 # de servicio y rapidamente cambian para corregir su error pero esto genera registros incoherente
 # lo que se hace es evauluar si es servicio duro menos de 2 minutos entonces es un error#
-UMBRAL_MINUTOS = 2
-
-SERVICIO_OMITIDOS = ["1ER PISO DE REANIMACION. LADO B",
-                     "1ER PISO OBSERVACION DE URGENCIAS ADULTOS",
-                     "1ER PISO OBSERVACION DE URGENCIAS TRAUMA",
-                     "1ER PISO SALA DE PREPARACION QUIRURGICA",
-                     "1ER PISO SALA DE RECUPERACION",
-                     "1ER PISO TEMPORAL REMITIDOS",
-                     "1ER PISO URG.  LADO B EXT",
-                     "1ER PISO URG. LADO A EXT",
-                     "HOSPITALIZACION EN CASA"
-                     ]
-
-import pandas as pd
-
+ 
 UMBRAL_MINUTOS = 2
 
 SERVICIOS_OMITIDOS = [
@@ -31,10 +16,15 @@ SERVICIOS_OMITIDOS = [
     "1ER PISO TEMPORAL REMITIDOS",
     "1ER PISO URG.  LADO B EXT",
     "1ER PISO URG. LADO A EXT",
-    "HOSPITALIZACION EN CASA"
+    "HOSPITALIZACION EN CASA",
+    "3ER PISO URGENCIAS PLATINO SALA1",
+    "3ER PISO URGENCIAS PLATINO SALA2"
 ]
 
+##UNIR_SERVICIOC = {"4TO PISO TEMPORALES UADO":"4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"}
+
 def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
+    print(f"TOTALES REGISTROS EXTRAIDOS: {len(df)}")
 
     # ── 1. Tipos de fecha ─────────────────────────────────────────────────────
     df["INICIO"] = pd.to_datetime(df["INICIO"])
@@ -52,6 +42,11 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     # ── 4. Descartar efímeros (error médico < UMBRAL_MINUTOS) ─────────────────
     efimeros = df[df["DURACION_MIN"] < UMBRAL_MINUTOS].copy()
     df       = df[df["DURACION_MIN"] >= UMBRAL_MINUTOS].reset_index(drop=True)
+    # ── 5.0 Renombrar servicios ───────────────────────────────────────────────────    
+    RENOMBRAR_SERVICIOS = {
+        "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
+    }
+    df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
     # ── 5. Omitir servicios excluidos ─────────────────────────────────────────
     omitidos = df[df["SERVICIO"].isin(SERVICIOS_OMITIDOS)].copy()
@@ -92,10 +87,33 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final["FIN"] = df_final["FIN"].astype(object).where(df_final["FIN"].notna(), other=None)
 
     print(f"\n📊 Resumen:")
+   
     print(f"   ✅ Registros finales      : {len(df_final)}")
     print(f"   🏥 Pacientes activos      : {len(activos)}")
     print(f"   🔴 Fechas inválidas       : {len(invalidos)}")
     print(f"   ❌ Efímeros eliminados    : {len(efimeros)}")
     print(f"   🚫 Servicios omitidos     : {len(omitidos)}")
+    
+    print(f"\n🔎 Debug colapso:")
+    print(f"   Registros antes de colapsar : {len(df)}")
+    print(f"   Registros después de colapsar: {len(df_completos)}")
+    print(f"   Diferencia (colapsados/perdidos): {len(df) - len(df_completos)}")
+
+    # Ver si el problema es la igualdad exacta
+    gaps = []
+    for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
+        grupo = grupo.sort_values("INICIO").reset_index(drop=True)
+        for i in range(1, len(grupo)):
+            diff = (grupo.iloc[i]["INICIO"] - grupo.iloc[i-1]["FIN"]).total_seconds()
+            if diff != 0:
+                gaps.append(diff)
+
+    import numpy as np
+    if gaps:
+        print(f"\n⏱️ Gaps entre registros consecutivos del mismo paciente:")
+        print(f"   Gaps con diferencia != 0 : {len(gaps)}")
+        print(f"   Gap promedio (segundos)  : {np.mean(gaps):.1f}")
+        print(f"   Gap mínimo               : {min(gaps):.1f}")
+        print(f"   Gap máximo               : {max(gaps):.1f}")
 
     return df_final.to_dict(orient="records")

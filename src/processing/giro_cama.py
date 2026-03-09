@@ -7,6 +7,48 @@ import pandas as pd
  
 UMBRAL_MINUTOS = 2
 
+SERVICIO_A_CATEGORIA = {
+    "UCI": [
+        "2DO PISO UNIDAD DE QUEMADOS",
+        "3ER PISO UNIDAD CUIDADOS INTENSIVOS CARDIOVASCULAR", ## → UCI Coronaria
+        "4TO PISO UNIDAD DE CUIDADOS INTERMEDIOS",
+        "5TO PISO A-B UNIDAD DE CUIDADOS INTENSIVOS ADULTOS", ## → UCI Polivalente
+        "5TO PISO C-D UNIDAD DE CUIDADOS INTENSIVOS ADULTOS", ## → UCI Polivalente
+        "UNIDAD DE CUIDADOS INTENSIVOS ADULTOS (2DO PISO)",
+        "UNIDAD DE CUIDADOS INTENSIVOS PEDIATRICOS",
+        "UNIDAD DE CUIDADOS INTERMEDIOS ADULTOS (1ER PISO)",
+    ],
+    "MATERNIDAD": [
+        "4TO PISO HOSPITALIZACION MATERNIDAD",
+        "4TO PISO UNIDAD DE CUIDADOS INTENSIVO NEONATAL",
+        "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA",
+        "4TO PISO HOSPITALIZACION CUARTO PISO",
+    ],
+    "HOSPITALIZACION": [
+        "2DO PISO HOSPITALIZACION SEGUNDO PISO",
+        "2DO PISO ONCOLOGIA VIP 02",
+        "3ER PISO HOSPITALIZACION TERCER PISO",
+        "5TO PISO HOSPITALIZACION PRESIDENCIAL",
+        "5TO PISO HOSPITALIZACION QUINTO PISO",
+        "6TO PISO HOSPITALIZACION INFECTOLOGIA SEXTO PISO", 
+        "6TO PISO HOSPITALIZACION SEXTO PISO LADO A",
+        "6TO PISO HOSPITALIZACION SEXTO PISO LADO B",
+        "UNIDAD HEMATO ONCOLOGICA 5 PISO",
+    ],
+    "PEDIATRIA": [
+        "HOSPITALIZACION PEDIATRICA CUARTO PISO",
+        "HOSPITALIZACION PEDIATRICA SATELITE",
+        "SALA DE OBSERVACION PEDIATRICA",
+    ],
+    "OTROS": [
+        "HOSPITALIZACION SECCION A PISO 1",
+        "HOSPITALIZACION SECCION A PISO 2",
+        "HOSPITALIZACION SECCION B",
+        "HOSPITALIZACION SECCION C",
+        "TEMPORALES HOSPITALIZACION",
+    ],
+}
+
 SERVICIOS_OMITIDOS = [
     "1ER PISO DE REANIMACION. LADO B",
     "1ER PISO OBSERVACION DE URGENCIAS ADULTOS",
@@ -86,35 +128,41 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final     = df_final.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
 
     df_final["FIN"] = df_final["FIN"].astype(object).where(df_final["FIN"].notna(), other=None)
+    df_final["CATEGORIA"] = df_final["SERVICIO"].map(SERVICIO_A_CATEGORIA).fillna("OTROS")
 
-    print(f"\n📊 Resumen:")
+    # print(f"\n📊 Resumen:")
    
-    print(f"   ✅ Registros finales      : {len(df_final)}")
-    print(f"   🏥 Pacientes activos      : {len(activos)}")
-    print(f"   🔴 Fechas inválidas       : {len(invalidos)}")
-    print(f"   ❌ Efímeros eliminados    : {len(efimeros)}")
-    print(f"   🚫 Servicios omitidos     : {len(omitidos)}")
+    # print(f"   ✅ Registros finales      : {len(df_final)}")
+    # print(f"   🏥 Pacientes activos      : {len(activos)}")
+    # print(f"   🔴 Fechas inválidas       : {len(invalidos)}")
+    # print(f"   ❌ Efímeros eliminados    : {len(efimeros)}")
+    # print(f"   🚫 Servicios omitidos     : {len(omitidos)}")
     
-    print(f"\n🔎 Debug colapso:")
-    print(f"   Registros antes de colapsar : {len(df)}")
-    print(f"   Registros después de colapsar: {len(df_completos)}")
-    print(f"   Diferencia (colapsados/perdidos): {len(df) - len(df_completos)}")
+    # print(f"\n🔎 Debug colapso:")
+    # print(f"   Registros antes de colapsar : {len(df)}")
+    # print(f"   Registros después de colapsar: {len(df_completos)}")
+    # print(f"   Diferencia (colapsados/perdidos): {len(df) - len(df_completos)}")
 
-    # Ver si el problema es la igualdad exacta
-    gaps = []
-    for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
-        grupo = grupo.sort_values("INICIO").reset_index(drop=True)
-        for i in range(1, len(grupo)):
-            diff = (grupo.iloc[i]["INICIO"] - grupo.iloc[i-1]["FIN"]).total_seconds()
-            if diff != 0:
-                gaps.append(diff)
+    # # Ver si el problema es la igualdad exacta
+    # gaps = []
+    # for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
+    #     grupo = grupo.sort_values("INICIO").reset_index(drop=True)
+    #     for i in range(1, len(grupo)):
+    #         diff = (grupo.iloc[i]["INICIO"] - grupo.iloc[i-1]["FIN"]).total_seconds()
+    #         if diff != 0:
+    #             gaps.append(diff)
 
-    import numpy as np
-    if gaps:
-        print(f"\n⏱️ Gaps entre registros consecutivos del mismo paciente:")
-        print(f"   Gaps con diferencia != 0 : {len(gaps)}")
-        print(f"   Gap promedio (segundos)  : {np.mean(gaps):.1f}")
-        print(f"   Gap mínimo               : {min(gaps):.1f}")
-        print(f"   Gap máximo               : {max(gaps):.1f}")
-
+    # import numpy as np
+    # if gaps:
+    #     print(f"\n⏱️ Gaps entre registros consecutivos del mismo paciente:")
+    #     print(f"   Gaps con diferencia != 0 : {len(gaps)}")
+    #     print(f"   Gap promedio (segundos)  : {np.mean(gaps):.1f}")
+    #     print(f"   Gap mínimo               : {min(gaps):.1f}")
+    #     print(f"   Gap máximo               : {max(gaps):.1f}")
+    
+    # # ── DEBUG: Ver nombres reales de servicios ────────────────────────────────────
+    # print("\n📋 Servicios únicos en BD:")
+    # for servicio in sorted(df["SERVICIO"].unique()):
+    #     print(f"   '{servicio}'")
+    
     return df_final.to_dict(orient="records")

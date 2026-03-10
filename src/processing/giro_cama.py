@@ -4,7 +4,7 @@ import pandas as pd
 # Razon: Se realiza un estudio y muchos medicos por las largas hora de laburo tiende a equivocarse
 # de servicio y rapidamente cambian para corregir su error pero esto genera registros incoherente
 # lo que se hace es evauluar si es servicio duro menos de 2 minutos entonces es un error#
- 
+from src.test.test import debug_egresos
 UMBRAL_MINUTOS = 2
 
 SERVICIO_A_CATEGORIA = {
@@ -88,6 +88,12 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     RENOMBRAR_SERVICIOS = {
         "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
     }
+    # Invertir el diccionario para lookup correcto: {servicio: categoria}
+    _SERVICIO_A_CATEGORIA_LOOKUP = {
+        servicio: categoria
+        for categoria, servicios in SERVICIO_A_CATEGORIA.items()
+        for servicio in servicios
+    }
     
     df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
@@ -121,6 +127,9 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     # ── 8. Construir DataFrame final ──────────────────────────────────────────
     columnas = ["SEDE", "IDENTIFICACION", "PACIENTE", "PLAN_BENEFICIOS",
                 "INGRESO", "CAMA", "SERVICIO", "INICIO", "FIN", "AINOBSERV"]
+    
+    activos["SERVICIO"] = activos["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
+    activos = activos[~activos["SERVICIO"].isin(SERVICIOS_OMITIDOS)].reset_index(drop=True)
 
     df_completos = pd.DataFrame(resultado)[columnas] if resultado else pd.DataFrame(columns=columnas)
     df_activos   = activos[columnas]
@@ -128,41 +137,9 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final     = df_final.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
 
     df_final["FIN"] = df_final["FIN"].astype(object).where(df_final["FIN"].notna(), other=None)
-    df_final["CATEGORIA"] = df_final["SERVICIO"].map(SERVICIO_A_CATEGORIA).fillna("OTROS")
+    df_final["CATEGORIA"] = df_final["SERVICIO"].map(_SERVICIO_A_CATEGORIA_LOOKUP).fillna("OTROS")
 
-    # print(f"\n📊 Resumen:")
-   
-    # print(f"   ✅ Registros finales      : {len(df_final)}")
-    # print(f"   🏥 Pacientes activos      : {len(activos)}")
-    # print(f"   🔴 Fechas inválidas       : {len(invalidos)}")
-    # print(f"   ❌ Efímeros eliminados    : {len(efimeros)}")
-    # print(f"   🚫 Servicios omitidos     : {len(omitidos)}")
-    
-    # print(f"\n🔎 Debug colapso:")
-    # print(f"   Registros antes de colapsar : {len(df)}")
-    # print(f"   Registros después de colapsar: {len(df_completos)}")
-    # print(f"   Diferencia (colapsados/perdidos): {len(df) - len(df_completos)}")
-
-    # # Ver si el problema es la igualdad exacta
-    # gaps = []
-    # for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
-    #     grupo = grupo.sort_values("INICIO").reset_index(drop=True)
-    #     for i in range(1, len(grupo)):
-    #         diff = (grupo.iloc[i]["INICIO"] - grupo.iloc[i-1]["FIN"]).total_seconds()
-    #         if diff != 0:
-    #             gaps.append(diff)
-
-    # import numpy as np
-    # if gaps:
-    #     print(f"\n⏱️ Gaps entre registros consecutivos del mismo paciente:")
-    #     print(f"   Gaps con diferencia != 0 : {len(gaps)}")
-    #     print(f"   Gap promedio (segundos)  : {np.mean(gaps):.1f}")
-    #     print(f"   Gap mínimo               : {min(gaps):.1f}")
-    #     print(f"   Gap máximo               : {max(gaps):.1f}")
-    
-    # # ── DEBUG: Ver nombres reales de servicios ────────────────────────────────────
-    # print("\n📋 Servicios únicos en BD:")
-    # for servicio in sorted(df["SERVICIO"].unique()):
-    #     print(f"   '{servicio}'")
-    
+    debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
     return df_final.to_dict(orient="records")
+
+

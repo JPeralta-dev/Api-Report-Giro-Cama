@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from src.config.db.db import DataBase
 from src.services.get_query_giro_camas import get_giro_camas
 from src.processing.giro_cama import proccesing_query_giro_cama
+from src.processing.metricas_giro_cama import calcular_egresos_y_estancia
+
 
 import pandas as pd
 
@@ -12,7 +14,35 @@ def RouterReports () -> APIRouter:
     @router.get("/")
     def get_report_giro_cama():
         engine = DataBase.get_engine()
-        return proccesing_query_giro_cama(get_giro_camas(engine))
+        df_final = proccesing_query_giro_cama(get_giro_camas(engine))
+        
+        return df_final
+    
+    @router.get("/metricas")
+    def get_metricas(
+        year:      int         = Query(..., description="Año del filtro, ej: 2026"),
+        month:     int         = Query(..., ge=1, le=12, description="Mes del filtro (1-12)"),
+        categoria: str | None  = Query(None, description="Filtro por categoría, ej: UCI"),
+        servicio:  str | None  = Query(None, description="Filtro por servicio específico"),
+    ):
+        """
+        Retorna egresos y días de estancia promedio para el mes indicado.
+
+        - Incluye pacientes con egreso real (FIN dentro del mes).
+        - Incluye pacientes activos (sin FIN) presentes durante el mes;
+          su corte se toma en el último segundo del mes.
+        """
+        engine    = DataBase.get_engine()
+        df_raw    = get_giro_camas(engine)
+        df        = pd.DataFrame(proccesing_query_giro_cama(df_raw))
+
+        return calcular_egresos_y_estancia(
+            df        = df,
+            year      = year,
+            month     = month,
+            categoria = categoria,
+            servicio  = servicio,
+        )
     
 
     @router.get("/servicios")

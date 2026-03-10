@@ -5,6 +5,7 @@ import pandas as pd
 # de servicio y rapidamente cambian para corregir su error pero esto genera registros incoherente
 # lo que se hace es evauluar si es servicio duro menos de 2 minutos entonces es un error#
 from src.test.test import debug_egresos
+from calendar import monthrange
 UMBRAL_MINUTOS = 2
 
 SERVICIO_A_CATEGORIA = {
@@ -65,8 +66,15 @@ SERVICIOS_OMITIDOS = [
 
 ##UNIR_SERVICIOC = {"4TO PISO TEMPORALES UADO":"4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"}
 
+from datetime import datetime
+
 def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     print(f"TOTALES REGISTROS EXTRAIDOS: {len(df)}")
+
+    # ── Fecha actual para cerrar activos ──────────────────────────────────────
+    hoy        = datetime.now()
+    ultimo_dia = monthrange(hoy.year, hoy.month)[1]
+    fin_mes    = pd.Timestamp(hoy.year, hoy.month, ultimo_dia, 23, 59, 59)
 
     # ── 1. Tipos de fecha ─────────────────────────────────────────────────────
     df["INICIO"] = pd.to_datetime(df["INICIO"])
@@ -84,17 +92,17 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     # ── 4. Descartar efímeros (error médico < UMBRAL_MINUTOS) ─────────────────
     efimeros = df[df["DURACION_MIN"] < UMBRAL_MINUTOS].copy()
     df       = df[df["DURACION_MIN"] >= UMBRAL_MINUTOS].reset_index(drop=True)
-    # ── 5.0 Renombrar servicios ───────────────────────────────────────────────────    
+
+    # ── 5.0 Renombrar servicios ───────────────────────────────────────────────
     RENOMBRAR_SERVICIOS = {
         "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
     }
-    # Invertir el diccionario para lookup correcto: {servicio: categoria}
     _SERVICIO_A_CATEGORIA_LOOKUP = {
         servicio: categoria
         for categoria, servicios in SERVICIO_A_CATEGORIA.items()
         for servicio in servicios
     }
-    
+
     df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
     # ── 5. Omitir servicios excluidos ─────────────────────────────────────────
@@ -110,7 +118,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     for (identificacion, ingreso), grupo in df.groupby(["IDENTIFICACION", "INGRESO"]):
         grupo  = grupo.reset_index(drop=True)
         bloque = grupo.iloc[0].to_dict()
-        
+
         for i in range(1, len(grupo)):
             fila_actual       = grupo.iloc[i]
             es_mismo_servicio = fila_actual["SERVICIO"] == bloque["SERVICIO"]
@@ -127,7 +135,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     # ── 8. Construir DataFrame final ──────────────────────────────────────────
     columnas = ["SEDE", "IDENTIFICACION", "PACIENTE", "PLAN_BENEFICIOS",
                 "INGRESO", "CAMA", "SERVICIO", "INICIO", "FIN", "AINOBSERV"]
-    
+
     activos["SERVICIO"] = activos["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
     activos = activos[~activos["SERVICIO"].isin(SERVICIOS_OMITIDOS)].reset_index(drop=True)
 
@@ -136,8 +144,33 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final     = pd.concat([df_completos, df_activos], ignore_index=True)
     df_final     = df_final.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
 
-    df_final["FIN"] = df_final["FIN"].astype(object).where(df_final["FIN"].notna(), other=None)
     df_final["CATEGORIA"] = df_final["SERVICIO"].map(_SERVICIO_A_CATEGORIA_LOOKUP).fillna("OTROS")
+
+    # ── 9. Rellenar FIN de activos con último día del mes actual ──────────────
+    df_final["FIN"] = df_final["FIN"].fillna(fin_mes)
+    
+    # ── 10. Calcular DIAS_ESTANCIA por registro acotado al mes del FIN ────────
+    df_final["INICIO"] = pd.to_datetime(df_final["INICIO"])
+    df_final["FIN"]    = pd.to_datetime(df_final["FIN"])
+
+# El mes de referencia es el mes del FIN de cada registro
+    mes_ref    = df_final["FIN"].dt.month
+    año_ref    = df_final["FIN"].dt.year
+
+    inicio_mes_col = pd.to_datetime({
+        "year":  año_ref,
+        "month": mes_ref,
+        "day":   1
+    })
+
+    fin_mes_col = inicio_mes_col + pd.offsets.MonthEnd(0) + pd.Timedelta(hours=23, minutes=59, seconds=59)
+
+    inicio_ef = df_final["INICIO"].where(df_final["INICIO"] >= inicio_mes_col, inicio_mes_col)
+    fin_ef    = df_final["FIN"].where(df_final["FIN"] <= fin_mes_col, fin_mes_col)
+
+    df_final["DIAS_ESTANCIA"] = (
+        (fin_ef - inicio_ef).dt.total_seconds() / 86400
+        ).clip(lower=0).round(4)
 
     debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
     return df_final.to_dict(orient="records")

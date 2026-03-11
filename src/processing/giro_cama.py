@@ -31,7 +31,7 @@ SERVICIO_A_CATEGORIA = {
         "3ER PISO HOSPITALIZACION TERCER PISO",
         "5TO PISO HOSPITALIZACION PRESIDENCIAL",
         "5TO PISO HOSPITALIZACION QUINTO PISO",
-        "6TO PISO HOSPITALIZACION INFECTOLOGIA SEXTO PISO", 
+        "6TO PISO HOSPITALIZACION INFECTOLOGIA SEXTO PISO",
         "6TO PISO HOSPITALIZACION SEXTO PISO LADO A",
         "6TO PISO HOSPITALIZACION SEXTO PISO LADO B",
         "UNIDAD HEMATO ONCOLOGICA 5 PISO",
@@ -70,6 +70,7 @@ from datetime import datetime
 
 def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     print(f"TOTALES REGISTROS EXTRAIDOS: {len(df)}")
+    print(F"Columnas:  {df.columns}")
 
     # ── Fecha actual para cerrar activos ──────────────────────────────────────
     hoy        = datetime.now()
@@ -97,11 +98,11 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     RENOMBRAR_SERVICIOS = {
         "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
     }
-    _SERVICIO_A_CATEGORIA_LOOKUP = {
-        servicio: categoria
-        for categoria, servicios in SERVICIO_A_CATEGORIA.items()
-        for servicio in servicios
-    }
+    # _SERVICIO_A_CATEGORIA_LOOKUP = {
+    #     servicio: categoria
+    #     for categoria, servicios in SERVICIO_A_CATEGORIA.items()
+    #     for servicio in servicios
+    # }
 
     df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
@@ -133,8 +134,8 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
         resultado.append(bloque)
 
     # ── 8. Construir DataFrame final ──────────────────────────────────────────
-    columnas = ["SEDE", "IDENTIFICACION", "PACIENTE", "PLAN_BENEFICIOS",
-                "INGRESO", "CAMA", "SERVICIO", "INICIO", "FIN", "AINOBSERV"]
+    columnas = ["ID","SEDE", "IDENTIFICACION", "PACIENTE", "PLAN_BENEFICIOS",
+                "INGRESO", "CAMA", "SERVICIO", "INICIO", "FIN","CATEGORIA", "INICIO_OCUPACION_CAMA", "FIN_OCUPACION_CAMA", "AINOBSERV"]
 
     activos["SERVICIO"] = activos["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
     activos = activos[~activos["SERVICIO"].isin(SERVICIOS_OMITIDOS)].reset_index(drop=True)
@@ -144,11 +145,11 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final     = pd.concat([df_completos, df_activos], ignore_index=True)
     df_final     = df_final.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
 
-    df_final["CATEGORIA"] = df_final["SERVICIO"].map(_SERVICIO_A_CATEGORIA_LOOKUP).fillna("OTROS")
+    # df_final["CATEGORIA"] = df_final["SERVICIO"].map(_SERVICIO_A_CATEGORIA_LOOKUP).fillna("OTROS")
 
     # ── 9. Rellenar FIN de activos con último día del mes actual ──────────────
     df_final["FIN"] = df_final["FIN"].fillna(fin_mes)
-    
+
     # ── 10. Calcular DIAS_ESTANCIA por registro acotado al mes del FIN ────────
     df_final["INICIO"] = pd.to_datetime(df_final["INICIO"])
     df_final["FIN"]    = pd.to_datetime(df_final["FIN"])
@@ -171,6 +172,8 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     df_final["DIAS_ESTANCIA"] = (
         (fin_ef - inicio_ef).dt.total_seconds() / 86400
         ).clip(lower=0).round(4)
+    
+    df_final = df_final.replace({pd.NaT: None})
 
     debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
     return df_final.to_dict(orient="records")

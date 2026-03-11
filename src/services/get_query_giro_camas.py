@@ -6,14 +6,13 @@ dates = {
         "date2": '2026-01-02'
 }
 
-import pandas as pd
-from sqlalchemy import Engine
 
 def get_giro_camas(engine: Engine) -> pd.DataFrame:
     print(f"📅 Consultando datos desde 2026 en adelante...")
 
     query = """
         SELECT DISTINCT
+			HPNESTANC.OID AS ID,
             ADNCENATE.ACANOMBRE  AS SEDE,
             GENPACIEN.PACNUMDOC  AS IDENTIFICACION,
             GENPACIEN.GPANOMCOM  AS PACIENTE,
@@ -24,6 +23,9 @@ def get_giro_camas(engine: Engine) -> pd.DataFrame:
             HPNSUBGRU.HSUNOMBRE  AS SERVICIO,
             HPNESTANC.HESFECING  AS INICIO,
             HESFECSAL             AS FIN,
+			HPNDEFCAM.HCANOMBRE AS CATEGORIA,
+			HPNESTANC.HESFECING AS INICIO_OCUPACION_CAMA,
+			HPNESTANC.HESFECSAL AS FIN_OCUPACION_CAMA,
             ADNINGRESO.AINOBSERV
         FROM HPNESTANC
         INNER JOIN ADNINGRESO ON ADNINGRESO.OID = HPNESTANC.ADNINGRES
@@ -39,6 +41,7 @@ def get_giro_camas(engine: Engine) -> pd.DataFrame:
         UNION
 
         SELECT DISTINCT
+			HPNESTANC.OID AS ID,
             ADNCENATE.ACANOMBRE  AS SEDE,
             GENPACIEN.PACNUMDOC  AS IDENTIFICACION,
             GENPACIEN.GPANOMCOM  AS PACIENTE,
@@ -49,6 +52,9 @@ def get_giro_camas(engine: Engine) -> pd.DataFrame:
             HPNSUBGRU.HSUNOMBRE  AS SERVICIO,
             HPNESTANC.HESFECING  AS INICIO,
             HESFECSAL             AS FIN,
+			HPNDEFCAM.HCANOMBRE AS CATEGORIA,
+			HPNESTANC.HESFECING AS INICIO_OCUPACION_CAMA,
+			HPNESTANC.HESFECSAL AS FIN_OCUPACION_CAMA,
             ADNINGRESO.AINOBSERV
         FROM HPNESTANC
         INNER JOIN ADNINGRESO ON ADNINGRESO.OID = HPNESTANC.ADNINGRES

@@ -6,7 +6,7 @@ import logging
 class DataBase:
     _engine: Optional[Engine] = None
 
-    @classmethod
+    @classmethod 
     def get_engine(cls) -> Engine:
         if cls._engine is None:
             connection_string = (
@@ -14,6 +14,7 @@ class DataBase:
                 f"@{settings.DB_SERVER}/{settings.DB_NAME}"
                 f"?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
             )
+            ##print(connection_string)
             cls._engine = create_engine(connection_string, pool_size=10, max_overflow=20)
         return cls._engine
     

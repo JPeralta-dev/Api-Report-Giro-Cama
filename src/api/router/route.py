@@ -3,6 +3,7 @@ from src.config.db.db import DataBase
 from src.services.get_query_giro_camas import get_giro_camas
 from src.processing.giro_cama import proccesing_query_giro_cama
 from src.processing.metricas_giro_cama import calcular_egresos_y_estancia
+from src.services.get_query_camas import get_camas
 
 
 import pandas as pd
@@ -17,6 +18,11 @@ def RouterReports () -> APIRouter:
         df_final = proccesing_query_giro_cama(get_giro_camas(engine))
         
         return df_final
+    
+    @router.get("/camas")
+    def get_report_camas():
+        engine = DataBase.get_engine()
+        return get_camas(engine)
     
     @router.get("/metricas")
     def get_metricas(

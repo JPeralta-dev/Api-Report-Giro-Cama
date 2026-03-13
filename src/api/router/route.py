@@ -41,7 +41,7 @@ def RouterReports () -> APIRouter:
         engine    = DataBase.get_engine()
         df_raw    = get_giro_camas(engine)
         df        = pd.DataFrame(proccesing_query_giro_cama(df_raw))
-
+        
         return calcular_egresos_y_estancia(
             df        = df,
             year      = year,

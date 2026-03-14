@@ -75,6 +75,7 @@ def get_giro_camas(engine: Engine) -> pd.DataFrame:
 		
         ORDER BY 5, 8
     """
+    
     df = pd.read_sql(query, engine)
     print(f"Estamos en Services y este es el resultado: {len(df)}")
     return df

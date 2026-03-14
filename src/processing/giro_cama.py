@@ -70,7 +70,7 @@ SERVICIOS_OMITIDOS = [
 
 from datetime import datetime
 
-def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
+def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
     print(f"TOTALES REGISTROS EXTRAIDOS: {len(df)}")
     print(F"Columnas:  {df.columns}")
 
@@ -185,13 +185,15 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> list[dict]:
     
     df_final = df_final.replace({pd.NaT: None})
 
-    debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
+    egresos_lista = debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
+    ##egresos_lista = df_final["INGRESO"].tolist()
+    ##print("INGRESOS CONTADOS:")
+    ##print(sorted(egresos_lista))
+    
     # ── 11. Agregar columnas de año y mes para filtros en Power BI ────────────
     df_final["AÑO"]  = df_final["FIN"].dt.year
     df_final["MES"]  = df_final["FIN"].dt.month
     df_final["MES_NOMBRE"] = df_final["FIN"].dt.strftime("%B")
     df_final = df_final.drop(columns=["CANTIDAD_CAMAS"], errors="ignore")
     df_final = df_final.merge(camas_lookup, on="SERVICIO", how="left")
-    return df_final.to_dict(orient="records")
-
-
+    return df_final

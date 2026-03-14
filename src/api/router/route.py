@@ -16,8 +16,7 @@ def RouterReports () -> APIRouter:
     def get_report_giro_cama():
         engine = DataBase.get_engine()
         df_final = proccesing_query_giro_cama(get_giro_camas(engine))
-        
-        return df_final
+        return df_final.to_dict(orient="records")
     
     @router.get("/camas")
     def get_report_camas():

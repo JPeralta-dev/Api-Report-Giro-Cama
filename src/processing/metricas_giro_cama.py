@@ -98,11 +98,14 @@ def calcular_egresos_y_estancia(
             ACTIVO         = ("FIN",              lambda s: s.isna().any()),
         )
     )
+    
+    pacientes_atendidos = por_ingreso["IDENTIFICACION"].nunique()
 
     egresos              = len(por_ingreso)
     dias_estancia_prom   = round(por_ingreso["DIAS_ESTANCIA"].mean(), 1)
 
     return {
+        "pacientes atentidos":pacientes_atendidos,
         "egresos":                 egresos,
         "dias_estancia_promedio":  dias_estancia_prom,
         "detalle":                 por_ingreso.to_dict(orient="records"),

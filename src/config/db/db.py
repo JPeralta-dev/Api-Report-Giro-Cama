@@ -24,8 +24,8 @@ class DataBase:
         try:
             with cls.get_engine().connect() as conn:
                 conn.execute(text("SELECT 1"))
-                print("Conexion exitosa")
+                logging.info("Conexion a base de datos exitosa")
                 return True
         except Exception as error:
-            logging.error(f" Error de conexion: {error}")
+            logging.error("Error de conexion a base de datos: %s", error)
             return False

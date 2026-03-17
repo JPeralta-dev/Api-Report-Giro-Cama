@@ -1,6 +1,8 @@
 import pandas as pd
 from sqlalchemy import Engine
+import logging
 
+logger = logging.getLogger(__name__)
 dates = {
         "date1": '2026-01-01',
         "date2": '2026-01-02'
@@ -8,8 +10,7 @@ dates = {
 
 
 def get_giro_camas(engine: Engine) -> pd.DataFrame:
-
-
+    logger.info("Consultando datos desde 2026 en adelante")
     query = """
         SELECT DISTINCT
 			HPNESTANC.OID AS ID,
@@ -77,5 +78,5 @@ def get_giro_camas(engine: Engine) -> pd.DataFrame:
     """
     
     df = pd.read_sql(query, engine)
-    print(f"Estamos en Services y este es el resultado: {len(df)}")
+    logger.info("Consulta completada. Registros obtenidos: %s", len(df))
     return df

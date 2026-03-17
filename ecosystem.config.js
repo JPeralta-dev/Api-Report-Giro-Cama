@@ -14,10 +14,12 @@ module.exports = {
       env: {
         APP_ENV: "development",
         APP_PORT: 8000,
+        PYTHONIOENCODING: "utf-8", // <-- agrega esto
       },
       env_production: {
         APP_ENV: "production",
         APP_PORT: 8000,
+        PYTHONIOENCODING: "utf-8", // <-- agrega esto
       },
     },
   ],

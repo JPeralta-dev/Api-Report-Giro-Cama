@@ -8,7 +8,7 @@ dates = {
 
 
 def get_giro_camas(engine: Engine) -> pd.DataFrame:
-    print(f"📅 Consultando datos desde 2026 en adelante...")
+
 
     query = """
         SELECT DISTINCT

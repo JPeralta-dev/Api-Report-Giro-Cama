@@ -32,13 +32,13 @@ def debug_egresos(
     if categoria:
         df = df[df["CATEGORIA"] == categoria]
 
-    print(f"📋 Registros después de filtro: {len(df)}")
+    print(f" Registros después de filtro: {len(df)}")
 
     if servicio:
-        print(f"🔍 Servicio : {servicio}")
+        print(f" Servicio : {servicio}")
 
     if categoria:
-        print(f"🔍 Categoría: {categoria}")
+        print(f" Categoría: {categoria}")
 
     # ── Registros que tocan el período ─────────────────
     en_periodo = df[
@@ -46,7 +46,7 @@ def debug_egresos(
         ((df["FIN"] >= ini_mes) | (df["FIN"].isna()))
     ].copy()
 
-    print(f"📅 Registros en periodo: {len(en_periodo)}")
+    print(f" Registros en periodo: {len(en_periodo)}")
 
     # ── Egresos reales del periodo ─────────────────────
     egresos_df = en_periodo[
@@ -73,7 +73,7 @@ def debug_egresos(
 
     total_dias = en_periodo["ESTANCIA"].sum()
 
-    print("\n📊 Resultados:")
+    print("\n Resultados:")
     print(f"   Egresos        : {egresos}")
     print(f"   Total días     : {total_dias:.2f}")
     print(f"   Días estancia  : {total_dias/egresos:.2f}" if egresos > 0 else "   Días estancia  : N/A")

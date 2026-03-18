@@ -66,7 +66,7 @@ SERVICIOS_OMITIDOS = [
     "3ER PISO URGENCIAS PLATINO SALA2"
 ]
 
-##UNIR_SERVICIOC = {"4TO PISO TEMPORALES UADO":"4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"}
+
 
 from datetime import datetime
 
@@ -100,11 +100,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
     RENOMBRAR_SERVICIOS = {
         "4TO PISO TEMPORALES UADO": "4TO PISO UCI ALTA DEPENDENCIA OBSTETRICIA"
     }
-    # _SERVICIO_A_CATEGORIA_LOOKUP = {
-    #     servicio: categoria
-    #     for categoria, servicios in SERVICIO_A_CATEGORIA.items()
-    #     for servicio in servicios
-    # }
+    
 
     df["SERVICIO"] = df["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
 
@@ -185,10 +181,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
     
     df_final = df_final.replace({pd.NaT: None})
 
-    egresos_lista = debug_egresos(df_final, "2026-02-01", "2026-02-28 23:59:00", servicio="2DO PISO UNIDAD DE QUEMADOS")
-    ##egresos_lista = df_final["INGRESO"].tolist()
-    ##print("INGRESOS CONTADOS:")
-    ##print(sorted(egresos_lista))
+    
     
     # ── 11. Agregar columnas de año y mes para filtros en Power BI ────────────
     df_final["AÑO"]  = df_final["FIN"].dt.year

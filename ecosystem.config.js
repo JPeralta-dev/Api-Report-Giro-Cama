@@ -5,7 +5,7 @@ module.exports = {
       cwd: __dirname,
 
       script: ".venv/bin/python",
-      args: "-m uvicorn src.main:app --host 0.0.0.0 --port 443 --ssl-certfile /etc/ssl/certs/server-cert.pem --ssl-keyfile /etc/ssl/private/server-key.pem",
+      args: "-m uvicorn src.main:app --host 0.0.0.0 --port 443 --ssl-certfile /home/rpatic/ssl/server-cert.pem --ssl-keyfile /home/rpatic/ssl/server-key.pem",
 
       interpreter: "none",
       exec_mode: "fork",

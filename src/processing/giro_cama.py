@@ -133,7 +133,7 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
 
     # ── 8. Construir DataFrame final ──────────────────────────────────────────
     columnas = ["ID","SEDE", "IDENTIFICACION", "PACIENTE", "PLAN_BENEFICIOS",
-            "INGRESO", "CAMA", "CANTIDAD_CAMAS", "SERVICIO", "INICIO", "FIN",
+            "INGRESO", "CAMA", "CANTIDAD_CAMAS_REALES", "SERVICIO", "INICIO", "FIN",
             "CATEGORIA", "INICIO_OCUPACION_CAMA", "FIN_OCUPACION_CAMA", "AINOBSERV"]
 
     activos["SERVICIO"] = activos["SERVICIO"].replace(RENOMBRAR_SERVICIOS)
@@ -144,8 +144,8 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
     df_final     = pd.concat([df_completos, df_activos], ignore_index=True)
     df_final     = df_final.sort_values(["IDENTIFICACION", "INGRESO", "INICIO"]).reset_index(drop=True)
     camas_lookup = (
-    df[["SERVICIO", "CANTIDAD_CAMAS"]]
-    .dropna(subset=["CANTIDAD_CAMAS"])
+    df[["SERVICIO", "CANTIDAD_CAMAS_REALES"]]
+    .dropna(subset=["CANTIDAD_CAMAS_REALES"])
     .drop_duplicates("SERVICIO")
 )
     # df_final["CATEGORIA"] = df_final["SERVICIO"].map(_SERVICIO_A_CATEGORIA_LOOKUP).fillna("OTROS")
@@ -182,11 +182,10 @@ def proccesing_query_giro_cama(df: pd.DataFrame) -> pd.DataFrame:
     df_final = df_final.replace({pd.NaT: None})
 
     
-    
     # ── 11. Agregar columnas de año y mes para filtros en Power BI ────────────
     df_final["AÑO"]  = df_final["FIN"].dt.year
     df_final["MES"]  = df_final["FIN"].dt.month
     df_final["MES_NOMBRE"] = df_final["FIN"].dt.strftime("%B")
-    df_final = df_final.drop(columns=["CANTIDAD_CAMAS"], errors="ignore")
+    df_final = df_final.drop(columns=["CANTIDAD_CAMAS_REALES"], errors="ignore")
     df_final = df_final.merge(camas_lookup, on="SERVICIO", how="left")
     return df_final

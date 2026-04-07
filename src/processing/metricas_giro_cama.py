@@ -74,10 +74,10 @@ def calcular_egresos_y_estancia(
     # ── Calcular días de estancia acotados al mes ─────────────────────────────
     # Para activos, usar fin_mes como FIN de corte
     df_mes["FIN_EFECTIVO"]    = df_mes["FIN"].fillna(fin_mes)
-    df_mes["FIN_EFECTIVO"]    = df_mes["FIN_EFECTIVO"].clip(upper=fin_mes)
+    df_mes["FIN_EFECTIVO"]    = df_mes["FIN_EFECTIVO"].where(df_mes["FIN_EFECTIVO"] <= fin_mes, fin_mes)
 
     # No contar días anteriores al mes
-    df_mes["INICIO_EFECTIVO"] = df_mes["INICIO"].clip(lower=inicio_mes)
+    df_mes["INICIO_EFECTIVO"] = df_mes["INICIO"].where(df_mes["INICIO"] >= inicio_mes, inicio_mes)
 
     df_mes["DIAS_ESTANCIA"] = (
         (df_mes["FIN_EFECTIVO"] - df_mes["INICIO_EFECTIVO"])
